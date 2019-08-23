@@ -1,4 +1,6 @@
 require 'sqlite3'
+require 'httparty'
+require 'json'
 
 class Pixabay
     attr_accessor :key
@@ -27,5 +29,23 @@ class Pixabay
     def cache_db=(db)
         self.class.setup_tables(db)
         @cache_db = db
+    end
+
+    def query(**terms)
+        response = uncached_query(**terms)
+    end
+
+    def uncached_query(**terms)
+        unless terms.key?('key') || terms.key?(:key)
+            terms[:key] = @key
+        end
+        query_string = '?' + terms.map { |k, v| "#{k}=#{v}" }.join('&')
+
+        response = HTTParty.get('https://pixabay.com/api/' + query_string)
+        if response.code < 200 || response.code >= 300
+            raise 'Query response status: #{response.code}'
+        end
+
+        JSON.parse(response.body)
     end
 end
