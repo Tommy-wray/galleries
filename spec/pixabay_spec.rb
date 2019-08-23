@@ -31,6 +31,7 @@ end
 
 describe 'Querying the API object' do
     before do
+        FileUtils.rm('test.db')
         @db  = SQLite3::Database.new('test.db')
         @api = Pixabay.new(ENV['PIXABAY_KEY'], @db)
     end
@@ -50,9 +51,9 @@ describe 'Querying the API object' do
             end
 
             it 'THEN it caches the query and response in the database' do
-                cached = @db.execute("SELECT query, response FROM queries WHERE query = ?", @terms.to_s)
-                expect(cached.first.first).to eq(@terms.to_s)
-                expect(cached.first.last).to  eq(@response.to_s)
+                cached = @db.execute("SELECT query, response FROM queries WHERE query = ?", @terms.to_json)
+                expect(JSON.parse cached.first.first).to eq(@terms)
+                expect(JSON.parse cached.first.last).to  eq(@response)
             end
 
             it 'THEN it downloads the images and caches them in the database' do
