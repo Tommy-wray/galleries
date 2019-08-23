@@ -1,19 +1,42 @@
     <!DOCTYPE html>
 
     <html>
-     <link rel="stylesheet" type="text/css" href="style.css">
-     <header> 
+     <head>
+        <link rel="stylesheet" type="text/css" href="style.css">
+    </head>
+    <body>
+   
+   <header> 
      
-    <nav class="nav01">
-        <a href="index.erb">Home</a>
-        <a href="search.erb"class="is-current">Create you own gallerie!</a>
-        <span class="current-bar"></span>
+    <nav id="navigationBar">
+        <ul>
+            <li>
+            <a href="/" class="link">Home</a>
+            </li>
+            <li>
+            <a href="/s" class="link">Create your own gallerie</a>
+            </li>
+        </ul>
     </nav>
-     
-     </header>
+    
+ </header>
+   
+   <form>
+        <input class='required' placeholder='Gallerie name (required)' type='text'>
+        </form>
+        <div id='br'>
+        <input class='required' placeholder='Gallerie description (required)' type='text'>
+        </div>
+        <div id='br'>
+        <input class='required' placeholder='Add to gallerie (required)' type='text'>
+        </div>
+        <div id='br'>
+        <input placeholder='Add to galerie (optional)' type='text'>
+        </div>
+        <div id='br'>
+        <input class='send' type='submit' value='Send'>
+        </div>
 
-        <body>
- 
-        </body>
+    </body>
         
     </html>

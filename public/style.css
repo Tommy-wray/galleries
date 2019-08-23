@@ -382,3 +382,13 @@
   #navigationBar > ul > li > a:hover {
     color:#FCD000;
   }
+  input {
+    border:1px solid #ccc;
+    width:200px;
+    padding:10px;
+    margin:5px 15px;
+    border-radius:5px;
+}
+.send {
+    width:220px;
+}
