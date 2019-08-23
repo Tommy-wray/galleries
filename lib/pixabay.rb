@@ -5,23 +5,18 @@ require 'json'
 class Pixabay
     attr_accessor :key
     attr_reader :cache_db
-    def initialize(key, db)
+    def initialize(key, db, cache_directory)
         @key = key
         self.class.setup_tables(db)
         @cache_db = db
+        @cache_dir = cache_directory
     end
 
     def self.setup_tables(db)
-        db.execute_batch <<-SQL
+        db.execute <<-SQL
         CREATE TABLE IF NOT EXISTS images (
             image_id INTEGER PRIMARY KEY,
             filename TEXT
-        );
-
-        CREATE TABLE IF NOT EXISTS queries (
-            id INTEGER PRIMARY KEY,
-            query TEXT,
-            response TEXT
         );
         SQL
     end
@@ -32,14 +27,11 @@ class Pixabay
     end
 
     def query(**terms)
-        response = uncached_query(**terms)
+      response = uncached_query(**terms)
+      insert_filenames response
+      cache_images response
 
-        @cache_db.execute("""
-        INSERT INTO queries (query, response)
-        VALUES (?, ?);
-        """, terms.to_json, response.to_json)
-
-        response
+      response
     end
 
     def uncached_query(**terms)
@@ -54,5 +46,32 @@ class Pixabay
         end
 
         JSON.parse(response.body)
+    end
+
+    private
+
+    def insert_filenames(response)
+      response['hits'].each do |info|
+        info['filename'] = info['webformatURL'].split(',').last
+      end
+      nil
+    end
+
+    def image_ids_urls_filenames(response)
+      response['hits'].map { |info| [info['id'], info['webformatURL'], info['filename']] }
+    end
+
+    def download_images(ids_urls)
+    end
+
+    def cache_images(response)
+      ids_urls_filenames = image_ids_urls_filenames(response)
+      download_images(ids_urls_filenames[0..1])
+
+      sql_values = ids_urls_filenames
+                     .map { |(id, _, filename)| "(#{id}, '#{filename}')" }
+                     .join(', ')
+      sql_query = "INSERT INTO images (image_id, filename) VALUES " + sql_values
+      @cache_db.execute(sql_query)
     end
 end
