@@ -34,7 +34,7 @@ class Pixabay
     def query(**terms)
         response = uncached_query(**terms)
 
-        @cache_db.execute_batch("""
+        @cache_db.execute("""
         INSERT INTO queries (query, response)
         VALUES (?, ?);
         """, terms.to_json, response.to_json)
