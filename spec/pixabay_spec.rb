@@ -4,7 +4,7 @@ require 'fileutils'
 require 'pry'
 require_relative '../lib/pixabay.rb'
 
-$CACHE_DIR = __dir__ + '../test_images/'
+$CACHE_DIR = __dir__ + '/../test_images/'
 
 describe 'Creating an API object' do
     describe 'GIVEN an sql database object and an API key' do
@@ -55,17 +55,17 @@ describe 'Querying the API object' do
             end
 
             it 'THEN it downloads the images and caches them in the database' do
-              cached = @db.execute("SELECT image_id, filename FROM images WHERE image_id = ?", @terms.to_json)
+              cached = @db.execute("SELECT image_id, filename FROM images")
               image_ids = cached.map(&:first)
               filenames = cached.map(&:last)
 
               expect(image_ids.empty?).to be(false)
               expect(filenames.empty?).to be(false)
 
-              expect(image_ids).to all( match(/\d+/) )
+              expect(image_ids).to all( be_a(Integer) )
               expect(filenames).to all( match(/.+\..+/) )
 
-              dir_contents = Dir[$CACHE_DIR + '*.*']
+              dir_contents = Dir[$CACHE_DIR + '*.*'].map { |e| e.split('/').last }
 
               filenames.each do |filename|
                 expect(dir_contents).to include(filename)

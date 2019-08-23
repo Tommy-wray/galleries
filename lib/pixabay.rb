@@ -1,6 +1,7 @@
 require 'sqlite3'
 require 'httparty'
 require 'json'
+require 'down'
 
 class Pixabay
     attr_accessor :key
@@ -28,9 +29,12 @@ class Pixabay
 
     def query(**terms)
       response = uncached_query(**terms)
-      insert_filenames response
-      cache_images response
+      ids_urls = image_ids_urls(response)
+      filenames = download_images(ids_urls.map(&:last))
+      ids_filenames = ids_urls.map(&:first).zip filenames
+      cache_images(ids_filenames)
 
+      insert_filenames(response, filenames)
       response
     end
 
@@ -42,7 +46,7 @@ class Pixabay
 
         response = HTTParty.get('https://pixabay.com/api/' + query_string)
         if response.code < 200 || response.code >= 300
-            raise 'Query response status: #{response.code}'
+            raise "Query response status: #{response.code}"
         end
 
         JSON.parse(response.body)
@@ -50,26 +54,29 @@ class Pixabay
 
     private
 
-    def insert_filenames(response)
-      response['hits'].each do |info|
-        info['filename'] = info['webformatURL'].split(',').last
+    def insert_filenames(response, filenames)
+      response['hits'].zip(filenames).each do |info, filename|
+        info['filename'] = filename
       end
       nil
     end
 
-    def image_ids_urls_filenames(response)
-      response['hits'].map { |info| [info['id'], info['webformatURL'], info['filename']] }
+    def image_ids_urls(response)
+      response['hits'].map { |info| [info['id'], info['webformatURL']] }
     end
 
-    def download_images(ids_urls)
+    def download_images(urls)
+      urls.map do |url|
+        tempfile = Down.download(url)
+        FileUtils.mv(tempfile.path, "#{@cache_dir}#{tempfile.original_filename}", force: true)
+
+        tempfile.original_filename
+      end
     end
 
-    def cache_images(response)
-      ids_urls_filenames = image_ids_urls_filenames(response)
-      download_images(ids_urls_filenames[0..1])
-
-      sql_values = ids_urls_filenames
-                     .map { |(id, _, filename)| "(#{id}, '#{filename}')" }
+    def cache_images(ids_filenames)
+      sql_values = ids_filenames
+                     .map { |(id, filename)| "(#{id}, '#{filename}')" }
                      .join(', ')
       sql_query = "INSERT INTO images (image_id, filename) VALUES " + sql_values
       @cache_db.execute(sql_query)
