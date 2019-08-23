@@ -3,12 +3,13 @@ require 'sqlite3'
 class Pixabay
     attr_accessor :key
     attr_reader :cache_db
-    def initialize(key, cache_db)
+    def initialize(key, db)
         @key = key
-        @cache_db = cache_db
+        self.class.setup_tables(db)
+        @cache_db = db
     end
 
-    def cache_db=(db)
+    def self.setup_tables(db)
         db.execute_batch <<-SQL
         CREATE TABLE IF NOT EXISTS images (
             image_id INTEGER PRIMARY KEY,
@@ -21,7 +22,10 @@ class Pixabay
             response TEXT
         );
         SQL
+    end
 
+    def cache_db=(db)
+        self.class.setup_tables(db)
         @cache_db = db
     end
 end
