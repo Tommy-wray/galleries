@@ -7,6 +7,7 @@ class Gallery
   end
 
   def add_search_terms(*terms)
-    @q = (@q.empty? ? terms : [@q] + terms).join('+')
+    terms = [@q] + terms unless @q.empty?
+    @q = terms.join('+')
   end
 end
