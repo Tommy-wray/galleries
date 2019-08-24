@@ -13,6 +13,13 @@ class Gallery
     $API_PARAMS.each { |param| instance_variable_set('@'+param, '')}
   end
 
+  def generate_query
+    $API_PARAMS
+      .map { |param| [param.to_sym, instance_variable_get("@#{param}")] }
+      .reject { |(_, value)| value.empty? }
+      .to_h
+  end
+
   def category
     @category
   end

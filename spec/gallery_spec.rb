@@ -13,6 +13,23 @@ describe 'Creating a Gallery' do
   end
 end
 
+describe 'Getting a hash of query terms from a gallery' do
+  describe 'WHEN #generate_query is called with no arguments' do
+    before :each do
+      @gallery = Gallery.new
+      @terms = @gallery.generate_query
+    end
+
+    it "THEN the resulting hash's keys are all included in $API_PARAMS" do
+      expect($API_PARAMS.map(&:to_sym)).to include(*@terms.keys)
+    end
+
+    it "THEN none of resulting hash's values are an empty string" do
+      expect(@terms.values).to all( satisfy { |value| !value.empty? } )
+    end
+  end
+end
+
 describe 'Configuring a Gallery' do
   before :each do
     @gallery = Gallery.new
