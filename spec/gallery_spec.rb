@@ -41,5 +41,27 @@ describe 'Configuring a Gallery' do
         expect(@gallery.q).to eq('foo+bar+baz')
       end
     end
+
+    describe 'WHEN #reset_search_terms is called with no args' do
+      it 'THEN it sets #q to ""' do
+        @gallery.reset_search_terms
+        expect(@gallery.q).to eq('')
+      end
+    end
+  end
+
+  describe 'GIVEN some colors' do
+    describe 'WHEN #add_colors is called with a single valid color' do
+      it 'THEN it sets @colors to the given string' do
+        @gallery.add_colors('yellow')
+        expect(@gallery.colors).to eq('yellow')
+      end
+    end
+
+    describe 'WHEN #add_colors is called with a single invalid color' do
+      it 'THEN it raises an error' do
+        expect { @gallery.add_colors('foo') }.to raise_error(RuntimeError)
+      end
+    end
   end
 end
