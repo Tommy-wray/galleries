@@ -5,9 +5,9 @@ $API_CATEGORIES = %w[fashion nature backgrounds science education people feeling
 $API_COLORS = %w[grayscale transparent red orange yellow green turquoise blue lilac pink white gray black brown]
 
 class Gallery
-  custom_getters_setters = %w[category]
+  custom_getters_setters = %w[category order]
   attr_accessor(*$API_PARAMS
-                   .select { |param| !custom_getters_setters.include? param }
+                   .reject { |param| custom_getters_setters.include? param }
                    .map(&:to_sym))
   def initialize
     $API_PARAMS.each { |param| instance_variable_set('@'+param, '')}
@@ -21,7 +21,19 @@ class Gallery
     if $API_CATEGORIES.include? cat
       @category = cat
     else
-      raise "Category '#{cat}' not recognised by pixabay"
+      raise "Category '#{cat}' is not recognised by pixabay"
+    end
+  end
+
+  def order
+    @order
+  end
+
+  def order=(value)
+    if value == 'popular' || value == 'latest'
+      @order = value
+    else
+      raise "order set to '#{value}' but pixabay only accepts 'popular' or 'latest'"
     end
   end
 
