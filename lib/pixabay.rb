@@ -29,12 +29,24 @@ class Pixabay
 
     def query(**terms)
       response = uncached_query(**terms)
-      ids_urls = image_ids_urls(response)
-      filenames = download_images(ids_urls.map(&:last))
-      ids_filenames = ids_urls.map(&:first).zip filenames
-      cache_images(ids_filenames)
 
-      insert_filenames(response, filenames)
+      cached = get_cached_images(response['hits'].map { |e| e['id'] }).to_h
+      to_be_cached = []
+
+      response['hits'].each do |hit|
+        id, url = hit['id'], hit['webformatURL']
+
+        if cached.key? id
+          hit['filename'] = cached[id]
+        else
+          filename = download_image(url)
+          to_be_cached.push([id, filename])
+          hit['filename'] = filename
+        end
+      end
+
+      cache_images(to_be_cached) unless to_be_cached.empty?
+
       response
     end
 
@@ -54,24 +66,16 @@ class Pixabay
 
     private
 
-    def insert_filenames(response, filenames)
-      response['hits'].zip(filenames).each do |info, filename|
-        info['filename'] = filename
-      end
-      nil
+    def get_cached_images(ids)
+      query_list = "(" + ids.join(', ') + ")"
+      @cache_db.execute("SELECT image_id, filename FROM images WHERE image_id IN #{query_list};")
     end
 
-    def image_ids_urls(response)
-      response['hits'].map { |info| [info['id'], info['webformatURL']] }
-    end
+    def download_image(url)
+      tempfile = Down.download(url)
+      FileUtils.mv(tempfile.path, "#{@cache_dir}#{tempfile.original_filename}", force: true)
 
-    def download_images(urls)
-      urls.map do |url|
-        tempfile = Down.download(url)
-        FileUtils.mv(tempfile.path, "#{@cache_dir}#{tempfile.original_filename}", force: true)
-
-        tempfile.original_filename
-      end
+      tempfile.original_filename
     end
 
     def cache_images(ids_filenames)

@@ -27,7 +27,7 @@ describe 'Creating an API object' do
 end
 
 describe 'Querying the API object' do
-    before do
+    before :all do
         FileUtils.rm('test.db', force: true)
         @db  = SQLite3::Database.new('test.db')
         @api = Pixabay.new(ENV['PIXABAY_KEY'], @db, $CACHE_DIR)
@@ -35,29 +35,29 @@ describe 'Querying the API object' do
 
     describe 'GIVEN a search term' do
         describe 'WHEN #uncached_query is called with a symbol key argument' do
-            it 'THEN it returns an array' do
+            it 'THEN it returns a hash' do
                 response = @api.uncached_query(q: 'flower+alien')
-                expect(response.respond_to? :empty?).to be_truthy
+                expect(response.respond_to? :key?).to be_truthy
             end
         end
 
         describe 'WHEN #uncached_query is called with a string key argument' do
-          it 'THEN it returns an array' do
+          it 'THEN it returns a hash' do
             response = @api.uncached_query('q': 'flower+alien')
-            expect(response.respond_to? :empty?).to be_truthy
+            expect(response.respond_to? :key?).to be_truthy
           end
         end
 
         describe 'WHEN #query is called with a search term key argument' do
             before do
-                @terms = {q: 'flower+alien'}
-                @response = @api.query(**@terms)
+              @terms = {q: 'flower+alien'}
+              @response = @api.query(**@terms)
+              @cached = @db.execute("SELECT image_id, filename FROM images")
             end
 
             it 'THEN it downloads the images and caches them in the database' do
-              cached = @db.execute("SELECT image_id, filename FROM images")
-              image_ids = cached.map(&:first)
-              filenames = cached.map(&:last)
+              image_ids = @cached.map(&:first)
+              filenames = @cached.map(&:last)
 
               expect(image_ids.empty?).to be(false)
               expect(filenames.empty?).to be(false)
@@ -71,6 +71,20 @@ describe 'Querying the API object' do
                 expect(dir_contents).to include(filename)
               end
             end
+        end
+
+        describe 'WHEN #query is called again with the same arguments' do
+          before do
+            @terms = {q: 'flower+alien'}
+            @cached = @db.execute("SELECT image_id, filename FROM images")
+          end
+
+          it 'THEN it does not redownload the images' do
+            expect(@cached.empty?).to be(false)
+            FileUtils.rm_rf(Dir[$CACHE_DIR + '*'])
+            @api.query(**@terms)
+            expect(Dir[$CACHE_DIR + '*']).to eq([])
+          end
         end
     end
 end
