@@ -9,7 +9,11 @@ class Gallery
   attr_accessor(*$API_PARAMS
                    .reject { |param| custom_getters_setters.include? param }
                    .map(&:to_sym))
-  def initialize
+
+  attr_accessor :name
+
+  def initialize(name)
+    @name = name
     $API_PARAMS.each { |param| instance_variable_set('@'+param, '')}
   end
 
